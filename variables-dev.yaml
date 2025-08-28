@@ -1,0 +1,1 @@
+MYSQL_HOST: mysql.poojari.store #in this MYSQL HOST changes according to environmrnt, because development and production environment databases are different, we give the MYSQL HOST seperatly in variables-dev.yaml and variables-prod.yaml

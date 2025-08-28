@@ -1,0 +1,79 @@
+- name: disable current nodejs
+  ansible.builtin.command: dnf module disable nodejs -y
+
+- name: enable nodejs 20
+  ansible.builtin.command: dnf module enable nodejs:20 -y
+
+- name: install nodejs and mysql
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+  - nodejs 
+  - mysql 
+
+- name: create expense user 
+  ansible.builtin.user: # create user ansible
+    name: expense   
+
+- name: include from common role
+  tags: # use the tag to run the code second time
+  - deployment
+  include_role:
+    name: common
+    tasks_from: main
+                             
+
+# - name: create app directory
+#   ansible.builtin.file: # create directory ansible
+#     path: /app
+#     state: directory
+
+# - name: download backend code
+#   ansible.builtin.get_url: #download file ansible
+#     url: https://expense-builds.s3.us-east-1.amazonaws.com/expense-backend-v2.zip
+#     dest: /tmp/backend.zip
+
+# - name: unzip backend code
+#   ansible.builtin.unarchive: #unzip file ansible
+#     src: /tmp/backend.zip
+#     dest: /app
+#     remote_src: yes # if backend code is not their in ansible and it is their remote machine(other location then ansible)
+
+- name: install nodejs dependency
+  tags:
+  - deployment
+  community.general.npm: # ansible install nodejs dependency
+    path: /app # At this location we have package.json. The above commad read the package.json at /app and install it 
+
+- name: copy backend.service
+  ansible.builtin.template: # it will search in template folder
+    src: backend.service.j2 #in this MYSQL HOST changes according to environmrnt, because development and production environment databases are different, we give the MYSQL HOST seperatly in variables-dev.yaml and variables-prod.yaml
+    dest: /etc/systemd/system/backend.service
+# we are not giving remote_src: yes, because backend.service is their in ansible 
+
+- name: install mysql libraries
+  ansible.builtin.pip:  # ansible pip module
+    name: "{{ item }}"
+    executable: pip3.9 # To know present version of ansible- "ansible --version"
+  loop:
+  - PyMySQL
+  - cryptography
+
+- name: import mysql data
+  community.mysql.mysql_db: #ansible mysql module, mysql_db module
+    state: import
+    name: all 
+    login_user: "{{ MYSQL_USER }}" # This three not show in ansible module, we have to add it,
+    login_password: "{{ MYSQL_PASSWORD }}"
+    login_host: "{{ MYSQL_HOST }}"
+    target: /app/schema/backend.sql
+
+- name: daemon reload and restart service
+  tags:
+  - deployment
+  ansible.builtin.systemd_service: #ansible daemon reload
+    enabled: true 
+    state: restarted
+    daemon_reload: true
+    name: backend  # backend is the name of the service

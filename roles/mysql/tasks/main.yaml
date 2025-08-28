@@ -1,0 +1,34 @@
+- name: Install mysql libraries
+  ansible.builtin.pip: # ansible pip module
+    name: "{{ item }}"
+    executable: pip3.9 # To know present version of ansible- "ansible --version"
+  loop:
+  - cryptography
+  - PyMySQL
+
+- name: Install mysql server
+  ansible.builtin.package: # ansible package module
+    name: mysql-server
+    state: present
+
+- name: start and enable mysql
+  ansible.builtin.service: # ansible start and enable service
+    name: mysqld
+    state: started
+    enabled: yes
+
+- name: connect to mysql server
+  community.mysql.mysql_info: # ansible mysql module- mysql_info module
+    login_user: root
+    login_password: "{{ lookup('amazon.aws.aws_ssm', '/expense/mysql/mysql_root_password', decrypt=True ) }}"
+    login_host: "{{ mysql_host }}"
+  register: mysql_info
+  ignore_errors: true  # "ansible error handling" . In this we get error and we are telling that ignor it.
+
+- name: print the output
+  ansible.builtin.debug:
+    msg: "mysql information: {{ mysql_info }}" 
+
+- name: setup the login_password
+  ansible.builtin.command: mysql_secure_installation --set-root-pass "{{ lookup('amazon.aws.aws_ssm', '/expense/mysql/mysql_root_password', decrypt=True ) }}"
+  when: mysql_info.failed is true    
