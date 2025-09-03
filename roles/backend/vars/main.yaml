@@ -1,3 +1,4 @@
+MYSQL_HOST: "mysql-{{ ENVIRONMENT }}.poojari.store" #in this MYSQL HOST changes according to environmrnt, because development and production environment databases are different, we give the MYSQL HOST seperatly in variables-dev.yaml and variables-prod.yaml
 MYSQL_USER: root
 MYSQL_PASSWORD: ExpenseApp1
 app_location: /app
