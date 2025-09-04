@@ -1,3 +1,3 @@
-BACKEND_HOST: backend.poojari.store
+BACKEND_HOST: "backend.app-{{ ENVIRONMENT }}.poojari.store"
 app_location: /usr/share/nginx/html
 COMPONENT: frontend
